@@ -10,6 +10,7 @@ use App\Repository\BookRepository;
 use App\Entity\Book;
 use Doctrine\Persistence\ManagerRegistry;
 
+use function PHPSTORM_META\type;
 
 class BookController extends AbstractController
 {
@@ -38,7 +39,13 @@ class BookController extends AbstractController
     #[Route('/books', name: 'bookCreate', methods: ['POST'])]
     public function create(Request $request, BookRepository $bookRepository): JsonResponse
     {
-        $data = $request->request->all();
+
+        if ($request->headers->get('Content-Type') == 'application/json'){
+            $data = $request->toArray();
+        }else{
+            $data = $request->request->all();
+        }
+
         #Estudar sobre symfony serializer
         $book = new Book();
         $book->setTitle($data['title']);
@@ -62,7 +69,11 @@ class BookController extends AbstractController
 
         if (!$book) throw $this->createNotFoundException();
 
-        $data = $request->request->all();
+        if ($request->headers->get('Content-Type') == 'application/json'){
+            $data = $request->toArray();
+        }else{
+            $data = $request->request->all();
+        }
         #Estudar sobre symfony serializer
         
         $book->setTitle($data['title']);
@@ -76,5 +87,18 @@ class BookController extends AbstractController
             'message' => 'Book updated successfully!',
             'data' => $book           
         ], 201);
+    }
+
+    #[Route('/books/{book}', name: 'bookDelete', methods: ['DELETE'])]
+    public function delete(int $book, Request $request, BookRepository $bookRepository): JsonResponse
+    {
+
+        $book = $bookRepository->find($book);
+
+        $bookRepository->remove($book, true);
+
+        return $this->json([
+            'data' => $book
+        ]);
     }
 }
